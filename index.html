@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>Calculadora de frete — Fiorino</title>
+  <meta name="description" content="Calcule o custo operacional e o preço sugerido de fretes feitos com uma Fiorino.">
+  <meta name="theme-color" content="#1F4E79">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=IBM+Plex+Mono:wght@500;600&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    try {
+      var temaSalvo = localStorage.getItem("fiorino-frete:tema");
+      if (temaSalvo === "dark" || temaSalvo === "light") {
+        document.documentElement.setAttribute("data-theme", temaSalvo);
+      }
+    } catch (erroTema) {}
+  </script>
+</head>
+<body>
+  <a class="pular" href="#conteudo">Ir para o conteúdo</a>
+  <header class="topo">
+    <div class="casco topo-miolo">
+      <div class="marca">
+        <p class="sobretitulo">Calculadora de frete</p>
+        <h1 class="nome">Fiorino</h1>
+      </div>
+      <nav class="navegacao" aria-label="Seções">
+        <button type="button" data-visao="veiculo">Veículo</button>
+        <button type="button" data-visao="frete">Frete</button>
+        <button type="button" data-visao="historico">Histórico</button>
+      </nav>
+      <div class="tema-linha">
+        <button type="button" id="alternar-tema" class="botao botao-tema">
+          <svg class="sol" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2.5v2.2M12 19.3v2.2M4.7 4.7l1.6 1.6M17.7 17.7l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.7 19.3l1.6-1.6M17.7 6.3l1.6-1.6"></path>
+          </svg>
+          <span id="rotulo-tema">Tema escuro</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <p id="status" class="status casco" role="status" hidden></p>
+  <p id="aviso-bibliotecas" class="status casco" hidden></p>
+
+  <main id="conteudo" class="casco">
+    <div id="banner-exemplo" class="exemplo" hidden>
+      <p>Exemplo demonstrativo. Estes números não são dados do seu veículo.</p>
+      <button type="button" id="remover-exemplo" class="botao botao-secundario">Remover exemplo</button>
+    </div>
+
+    <section id="painel-veiculo" aria-labelledby="titulo-veiculo">
+      <div class="layout-veiculo">
+        <form id="form-veiculo" novalidate>
+          <h2 id="titulo-veiculo">Configuração do veículo</h2>
+          <p class="introducao">Informe o que a Fiorino custa para rodar. O frete usa estes valores.</p>
+          <p class="legenda-campo"><span class="obrigatorio" aria-hidden="true">*</span> Campo obrigatório. O botão ? explica o que preencher.</p>
+
+          <fieldset class="grupo">
+            <legend>Identificação</legend>
+            <div class="campo">
+              <div class="rotulo">
+                <label for="veiculo-nome">Nome do veículo</label>
+                <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-veiculo-nome" aria-label="Explicação de nome do veículo">?</button>
+                <p class="ajuda" id="ajuda-veiculo-nome" hidden>Um apelido para reconhecer o veículo no orçamento.</p>
+              </div>
+              <input id="veiculo-nome" maxlength="80" autocomplete="off" aria-describedby="ajuda-veiculo-nome">
+            </div>
+          </fieldset>
+
+          <fieldset class="grupo">
+            <legend>Combustível</legend>
+            <div class="grade grade-2">
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="preco-combustivel">Preço do combustível<span class="obrigatorio" aria-hidden="true">*</span><span class="somente-leitor">, obrigatório</span></label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-preco-combustivel" aria-label="Explicação de preço do combustível">?</button>
+                  <p class="ajuda" id="ajuda-preco-combustivel" hidden>Valor pago por litro.</p>
+                </div>
+                <div class="medida">
+                  <input id="preco-combustivel" inputmode="decimal" autocomplete="off" data-casas="2" aria-describedby="ajuda-preco-combustivel erro-preco-combustivel">
+                  <span>R$/L</span>
+                </div>
+                <p class="erro" id="erro-preco-combustivel" hidden></p>
+              </div>
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="consumo">Consumo médio<span class="obrigatorio" aria-hidden="true">*</span><span class="somente-leitor">, obrigatório</span></label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-consumo" aria-label="Explicação de consumo médio">?</button>
+                  <p class="ajuda" id="ajuda-consumo" hidden>Quilômetros que a Fiorino percorre com um litro.</p>
+                </div>
+                <div class="medida">
+                  <input id="consumo" inputmode="decimal" autocomplete="off" data-casas="2" aria-describedby="ajuda-consumo erro-consumo">
+                  <span>km/L</span>
+                </div>
+                <p class="erro" id="erro-consumo" hidden></p>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="grupo">
+            <legend>Custos por quilômetro</legend>
+            <div class="grade grade-2">
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="manutencao">Manutenção</label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-manutencao" aria-label="Explicação de manutenção">?</button>
+                  <p class="ajuda" id="ajuda-manutencao" hidden>Estimativa por quilômetro. Deixe em branco para usar zero.</p>
+                </div>
+                <div class="medida">
+                  <input id="manutencao" inputmode="decimal" autocomplete="off" data-casas="2" data-opcional="true" aria-describedby="ajuda-manutencao erro-manutencao">
+                  <span>R$/km</span>
+                </div>
+                <p class="erro" id="erro-manutencao" hidden></p>
+              </div>
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="pneus">Pneus</label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-pneus" aria-label="Explicação de pneus">?</button>
+                  <p class="ajuda" id="ajuda-pneus" hidden>Preencha só se o pneu não estiver incluído na manutenção.</p>
+                </div>
+                <div class="medida">
+                  <input id="pneus" inputmode="decimal" autocomplete="off" data-casas="2" data-opcional="true" aria-describedby="ajuda-pneus erro-pneus">
+                  <span>R$/km</span>
+                </div>
+                <p class="erro" id="erro-pneus" hidden></p>
+              </div>
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="consumiveis">Óleo e consumíveis</label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-consumiveis" aria-label="Explicação de óleo e consumíveis">?</button>
+                  <p class="ajuda" id="ajuda-consumiveis" hidden>Use só se este custo ainda não estiver na manutenção.</p>
+                </div>
+                <div class="medida">
+                  <input id="consumiveis" inputmode="decimal" autocomplete="off" data-casas="2" data-opcional="true" aria-describedby="ajuda-consumiveis erro-consumiveis">
+                  <span>R$/km</span>
+                </div>
+                <p class="erro" id="erro-consumiveis" hidden></p>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="grupo">
+            <legend>Custos do mês</legend>
+            <div class="grade grade-2">
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="seguro">Seguro</label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-seguro" aria-label="Explicação de seguro">?</button>
+                  <p class="ajuda" id="ajuda-seguro" hidden>Valor mensal do seguro.</p>
+                </div>
+                <div class="medida">
+                  <input id="seguro" inputmode="decimal" autocomplete="off" data-casas="2" data-opcional="true" aria-describedby="ajuda-seguro erro-seguro">
+                  <span>R$/mês</span>
+                </div>
+                <p class="erro" id="erro-seguro" hidden></p>
+              </div>
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="ipva">IPVA</label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-ipva" aria-label="Explicação de IPVA">?</button>
+                  <p class="ajuda" id="ajuda-ipva" hidden>Valor anual. O cálculo divide por 12.</p>
+                </div>
+                <div class="medida">
+                  <input id="ipva" inputmode="decimal" autocomplete="off" data-casas="2" data-opcional="true" aria-describedby="ajuda-ipva erro-ipva">
+                  <span>R$/ano</span>
+                </div>
+                <p class="erro" id="erro-ipva" hidden></p>
+              </div>
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="licenciamento">Licenciamento</label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-licenciamento" aria-label="Explicação de licenciamento">?</button>
+                  <p class="ajuda" id="ajuda-licenciamento" hidden>Valor anual. O cálculo divide por 12.</p>
+                </div>
+                <div class="medida">
+                  <input id="licenciamento" inputmode="decimal" autocomplete="off" data-casas="2" data-opcional="true" aria-describedby="ajuda-licenciamento erro-licenciamento">
+                  <span>R$/ano</span>
+                </div>
+                <p class="erro" id="erro-licenciamento" hidden></p>
+              </div>
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="financeiros">Custos financeiros</label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-financeiros" aria-label="Explicação de custos financeiros">?</button>
+                  <p class="ajuda" id="ajuda-financeiros" hidden>Parcela de financiamento ou leasing que sai do caixa no mês. Não é depreciação. Se esse valor já estiver em outras despesas fixas, deixe em branco para não contar duas vezes.</p>
+                </div>
+                <div class="medida">
+                  <input id="financeiros" inputmode="decimal" autocomplete="off" data-casas="2" data-opcional="true" aria-describedby="ajuda-financeiros erro-financeiros">
+                  <span>R$/mês</span>
+                </div>
+                <p class="erro" id="erro-financeiros" hidden></p>
+              </div>
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="outras-fixas">Outras despesas fixas</label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-outras-fixas" aria-label="Explicação de outras despesas fixas">?</button>
+                  <p class="ajuda" id="ajuda-outras-fixas" hidden>Estacionamento, rastreamento ou outro custo fixo mensal. Não repita seguro, IPVA, licenciamento nem financiamento.</p>
+                </div>
+                <div class="medida">
+                  <input id="outras-fixas" inputmode="decimal" autocomplete="off" data-casas="2" data-opcional="true" aria-describedby="ajuda-outras-fixas erro-outras-fixas">
+                  <span>R$/mês</span>
+                </div>
+                <p class="erro" id="erro-outras-fixas" hidden></p>
+              </div>
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="km-mensal">Quilometragem mensal<span class="obrigatorio" aria-hidden="true">*</span><span class="somente-leitor">, obrigatório</span></label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-km-mensal" aria-label="Explicação de quilometragem mensal">?</button>
+                  <p class="ajuda" id="ajuda-km-mensal" hidden>Quilometragem prevista no mês, usada para ratear os custos fixos. Precisa ser maior que zero.</p>
+                </div>
+                <div class="medida">
+                  <input id="km-mensal" inputmode="decimal" autocomplete="off" data-casas="2" aria-describedby="ajuda-km-mensal erro-km-mensal">
+                  <span>km</span>
+                </div>
+                <p class="erro" id="erro-km-mensal" hidden></p>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="grupo">
+            <legend>Preço padrão</legend>
+            <div class="grade grade-2">
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="margem-veiculo">Margem de lucro<span class="obrigatorio" aria-hidden="true">*</span><span class="somente-leitor">, obrigatório</span></label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-margem-veiculo" aria-label="Explicação de margem de lucro">?</button>
+                  <p class="ajuda" id="ajuda-margem-veiculo" hidden>Porcentagem do preço de venda, não um acréscimo sobre o custo. 20% significa que, de cada R$ 100 cobrados, R$ 20 são lucro. Precisa ser menor que 100%.</p>
+                </div>
+                <div class="medida">
+                  <input id="margem-veiculo" inputmode="decimal" autocomplete="off" data-casas="2" aria-describedby="ajuda-margem-veiculo erro-margem-veiculo">
+                  <span>%</span>
+                </div>
+                <p class="erro" id="erro-margem-veiculo" hidden></p>
+              </div>
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="minimo-veiculo">Valor mínimo de frete</label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-minimo-veiculo" aria-label="Explicação de valor mínimo de frete">?</button>
+                  <p class="ajuda" id="ajuda-minimo-veiculo" hidden>Se o preço calculado ficar abaixo deste valor, o orçamento usa este mínimo.</p>
+                </div>
+                <div class="medida">
+                  <input id="minimo-veiculo" inputmode="decimal" autocomplete="off" data-casas="2" data-opcional="true" aria-describedby="ajuda-minimo-veiculo erro-minimo-veiculo">
+                  <span>R$</span>
+                </div>
+                <p class="erro" id="erro-minimo-veiculo" hidden></p>
+              </div>
+            </div>
+          </fieldset>
+
+          <div class="acoes">
+            <button type="submit" class="botao botao-principal">Salvar configuração</button>
+            <button type="button" id="restaurar-veiculo" class="botao botao-secundario">Restaurar valores salvos</button>
+            <button type="button" id="preencher-exemplo" class="botao botao-secundario">Preencher com exemplo</button>
+            <button type="button" id="limpar-veiculo" class="botao botao-secundario">Limpar campos</button>
+            <button type="button" id="exportar-configuracao" class="botao botao-secundario">Exportar configurações</button>
+          </div>
+        </form>
+
+        <aside class="resumo-veiculo" aria-labelledby="titulo-resumo-veiculo">
+          <h2 id="titulo-resumo-veiculo">Custo do veículo</h2>
+          <p id="resumo-vazio">Preencha combustível, consumo e quilometragem mensal.</p>
+          <div id="resumo-lista" hidden>
+            <dl class="grade-resultado">
+              <dt>Custos fixos do mês</dt>
+              <dd id="resumo-fixos"></dd>
+              <dt>Custo fixo por km</dt>
+              <dd id="resumo-fixo-km"></dd>
+              <dt>Combustível por km</dt>
+              <dd id="resumo-combustivel-km"></dd>
+              <dt>Custo variável por km</dt>
+              <dd id="resumo-variavel-km"></dd>
+            </dl>
+            <p class="memoria" id="resumo-memoria-fixos"></p>
+            <p class="memoria" id="resumo-memoria-variavel"></p>
+          </div>
+          <p class="nota" id="nota-duplicidade" hidden></p>
+          <p class="nota" id="nota-veiculo-salvo"></p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="painel-frete" aria-labelledby="titulo-frete" hidden>
+      <div class="layout-frete">
+        <form id="form-frete" novalidate>
+          <h2 id="titulo-frete">Simulação do frete</h2>
+          <p class="introducao">A ida e o retorno entram separados. O cálculo usa a configuração atual do veículo, mesmo que ela ainda não tenha sido salva.</p>
+          <p class="legenda-campo"><span class="obrigatorio" aria-hidden="true">*</span> Campo obrigatório. O botão ? explica o que preencher.</p>
+
+          <fieldset class="grupo">
+            <legend>Serviço</legend>
+            <div class="campo">
+              <div class="rotulo">
+                <label for="descricao">Descrição</label>
+                <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-descricao" aria-label="Explicação de descrição">?</button>
+                <p class="ajuda" id="ajuda-descricao" hidden>Cliente ou serviço, para achar o orçamento depois.</p>
+              </div>
+              <input id="descricao" maxlength="120" autocomplete="off" aria-describedby="ajuda-descricao">
+            </div>
+          </fieldset>
+
+          <fieldset class="grupo">
+            <legend>Distâncias</legend>
+            <div class="grade grade-2">
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="distancia-ida">Distância de ida<span class="obrigatorio" aria-hidden="true">*</span><span class="somente-leitor">, obrigatório</span></label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-distancia-ida" aria-label="Explicação de distância de ida">?</button>
+                  <p class="ajuda" id="ajuda-distancia-ida" hidden>Quilômetros até o destino.</p>
+                </div>
+                <div class="medida">
+                  <input id="distancia-ida" inputmode="decimal" autocomplete="off" data-casas="2" aria-describedby="ajuda-distancia-ida erro-distancia-ida">
+                  <span>km</span>
+                </div>
+                <p class="erro" id="erro-distancia-ida" hidden></p>
+              </div>
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="distancia-retorno">Distância de retorno<span class="obrigatorio" aria-hidden="true">*</span><span class="somente-leitor">, obrigatório</span></label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-distancia-retorno" aria-label="Explicação de distância de retorno">?</button>
+                  <p class="ajuda" id="ajuda-distancia-retorno" hidden>Quilômetros de volta. Use 0 se não houver retorno.</p>
+                </div>
+                <div class="medida">
+                  <input id="distancia-retorno" inputmode="decimal" autocomplete="off" data-casas="2" aria-describedby="ajuda-distancia-retorno erro-distancia-retorno">
+                  <span>km</span>
+                </div>
+                <p class="erro" id="erro-distancia-retorno" hidden></p>
+              </div>
+            </div>
+            <label class="cheque">
+              <input id="retorno-vazio" type="checkbox">
+              <span>Retorno vazio, com a mesma distância da ida. Esses quilômetros entram no custo mesmo sem carga. Desmarque para informar outra distância.</span>
+            </label>
+          </fieldset>
+
+          <fieldset class="grupo">
+            <legend>Despesas desta viagem</legend>
+            <div class="grade grade-2">
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="pedagios">Pedágios</label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-pedagios" aria-label="Explicação de pedágios">?</button>
+                  <p class="ajuda" id="ajuda-pedagios" hidden>Soma dos pedágios da viagem.</p>
+                </div>
+                <div class="medida">
+                  <input id="pedagios" inputmode="decimal" autocomplete="off" data-casas="2" data-opcional="true" aria-describedby="ajuda-pedagios erro-pedagios">
+                  <span>R$</span>
+                </div>
+                <p class="erro" id="erro-pedagios" hidden></p>
+              </div>
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="ajudante">Ajudante</label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-ajudante" aria-label="Explicação de ajudante">?</button>
+                  <p class="ajuda" id="ajuda-ajudante" hidden>Pagamento de ajudante nesta viagem.</p>
+                </div>
+                <div class="medida">
+                  <input id="ajudante" inputmode="decimal" autocomplete="off" data-casas="2" data-opcional="true" aria-describedby="ajuda-ajudante erro-ajudante">
+                  <span>R$</span>
+                </div>
+                <p class="erro" id="erro-ajudante" hidden></p>
+              </div>
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="carga-descarga">Carga e descarga</label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-carga-descarga" aria-label="Explicação de carga e descarga">?</button>
+                  <p class="ajuda" id="ajuda-carga-descarga" hidden>Custo de carga e descarga desta viagem.</p>
+                </div>
+                <div class="medida">
+                  <input id="carga-descarga" inputmode="decimal" autocomplete="off" data-casas="2" data-opcional="true" aria-describedby="ajuda-carga-descarga erro-carga-descarga">
+                  <span>R$</span>
+                </div>
+                <p class="erro" id="erro-carga-descarga" hidden></p>
+              </div>
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="outras-despesas">Outras despesas</label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-outras-despesas" aria-label="Explicação de outras despesas">?</button>
+                  <p class="ajuda" id="ajuda-outras-despesas" hidden>Qualquer despesa desta viagem que não esteja nos campos acima.</p>
+                </div>
+                <div class="medida">
+                  <input id="outras-despesas" inputmode="decimal" autocomplete="off" data-casas="2" data-opcional="true" aria-describedby="ajuda-outras-despesas erro-outras-despesas">
+                  <span>R$</span>
+                </div>
+                <p class="erro" id="erro-outras-despesas" hidden></p>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="grupo">
+            <legend>Margem e valor mínimo</legend>
+            <div class="grade grade-2">
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="margem-frete">Margem deste frete<span class="obrigatorio" aria-hidden="true">*</span><span class="somente-leitor">, obrigatório</span></label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-margem-frete" aria-label="Explicação de margem deste frete">?</button>
+                  <p class="ajuda" id="ajuda-margem-frete" hidden>Começa com a margem do veículo e pode mudar neste frete. É porcentagem do preço de venda e precisa ser menor que 100%.</p>
+                </div>
+                <div class="medida">
+                  <input id="margem-frete" inputmode="decimal" autocomplete="off" data-casas="2" aria-describedby="ajuda-margem-frete erro-margem-frete">
+                  <span>%</span>
+                </div>
+                <p class="erro" id="erro-margem-frete" hidden></p>
+              </div>
+              <div class="campo">
+                <div class="rotulo">
+                  <label for="minimo-frete">Valor mínimo deste frete</label>
+                  <button type="button" class="duvida" aria-expanded="false" aria-controls="ajuda-minimo-frete" aria-label="Explicação de valor mínimo deste frete">?</button>
+                  <p class="ajuda" id="ajuda-minimo-frete" hidden>Se ficar vazio, vale o mínimo configurado no veículo.</p>
+                </div>
+                <div class="medida">
+                  <input id="minimo-frete" inputmode="decimal" autocomplete="off" data-casas="2" data-opcional="true" aria-describedby="ajuda-minimo-frete erro-minimo-frete">
+                  <span>R$</span>
+                </div>
+                <p class="erro" id="erro-minimo-frete" hidden></p>
+              </div>
+            </div>
+            <button type="button" id="copiar-padroes" class="botao botao-secundario">Copiar margem e mínimo do veículo</button>
+          </fieldset>
+
+          <div class="acoes">
+            <button type="submit" class="botao botao-principal" id="salvar-frete">Salvar orçamento</button>
+            <button type="button" id="ver-preco" class="botao botao-secundario">Calcular frete</button>
+            <button type="button" id="novo-frete" class="botao botao-secundario">Novo orçamento</button>
+            <button type="button" id="exportar-pdf" class="botao botao-secundario">Exportar PDF</button>
+            <button type="button" id="exportar-xlsx" class="botao botao-secundario">Exportar XLSX</button>
+          </div>
+        </form>
+
+        <aside class="romaneio" id="romaneio" tabindex="-1" aria-labelledby="rotulo-preco">
+          <p class="via">Via do motorista</p>
+          <p class="rotulo-preco" id="rotulo-preco">Preço sugerido</p>
+          <p class="preco" id="preco-sugerido">—</p>
+          <p class="preco-sub" id="preco-sub">Informe o veículo e as distâncias para calcular.</p>
+          <p class="preco-sub" id="linha-distancia" hidden></p>
+          <div id="detalhe-frete" hidden>
+            <dl class="grade-resultado">
+              <dt>Combustível</dt>
+              <dd id="linha-combustivel"></dd>
+              <dt>Demais variáveis</dt>
+              <dd id="linha-demais"></dd>
+              <dt>Custos fixos</dt>
+              <dd id="linha-fixos"></dd>
+              <dt>Despesas extras</dt>
+              <dd id="linha-extras"></dd>
+            </dl>
+            <hr>
+            <dl class="grade-resultado">
+              <dt>Custo total</dt>
+              <dd id="linha-custo"></dd>
+              <dt>Lucro estimado</dt>
+              <dd id="linha-lucro"></dd>
+              <dt>Margem efetiva</dt>
+              <dd id="linha-margem"></dd>
+              <dt>Custo por km</dt>
+              <dd id="linha-custo-km"></dd>
+              <dt>Preço por km</dt>
+              <dd id="linha-preco-km"></dd>
+            </dl>
+          </div>
+          <p class="nota" id="nota-minimo" hidden></p>
+          <p class="nota" id="nota-edicao" hidden></p>
+          <p class="nota" id="nota-origem-veiculo"></p>
+          <p class="estimativa">Estimativa operacional. O resultado depende dos dados informados e não representa tarifa oficial de frete.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="painel-historico" aria-labelledby="titulo-historico" hidden>
+      <h2 id="titulo-historico">Fretes salvos</h2>
+      <p class="introducao" id="contagem-fretes">Nenhum frete salvo neste navegador.</p>
+      <div id="historico-vazio" class="vazio">
+        <p>Calcule um frete e use Salvar orçamento para guardá-lo neste navegador.</p>
+      </div>
+      <div id="historico-cards" class="historico-cards"></div>
+      <div class="tabela-rolavel historico-tabela">
+        <table>
+          <caption class="somente-leitor">Fretes salvos neste navegador</caption>
+          <thead>
+            <tr>
+              <th scope="col">Descrição</th>
+              <th scope="col">Atualizado</th>
+              <th scope="col" class="num">Km</th>
+              <th scope="col" class="num">Preço sugerido</th>
+              <th scope="col">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="historico-corpo"></tbody>
+        </table>
+      </div>
+
+      <fieldset class="grupo">
+        <legend>Dados neste navegador</legend>
+        <p class="ajuda">O backup reúne a configuração do veículo e os fretes salvos. A importação confere o arquivo antes de mesclar ou substituir.</p>
+        <div class="acoes">
+          <button type="button" id="exportar-backup" class="botao botao-secundario">Exportar backup</button>
+          <button type="button" id="exportar-todos" class="botao botao-secundario">Exportar todos os fretes</button>
+        </div>
+        <div class="campo campo-arquivo">
+          <label for="arquivo-backup">Arquivo de backup JSON</label>
+          <input id="arquivo-backup" type="file" accept="application/json,.json">
+        </div>
+        <div id="resumo-backup" hidden>
+          <p id="texto-backup"></p>
+          <div class="acoes">
+            <button type="button" id="mesclar-backup" class="botao botao-principal">Mesclar fretes</button>
+            <button type="button" id="substituir-backup" class="botao botao-perigo">Substituir dados</button>
+          </div>
+        </div>
+        <label class="cheque">
+          <input id="confirmar-apagar" type="checkbox">
+          <span>Quero apagar a configuração e os fretes deste navegador.</span>
+        </label>
+        <div class="acoes">
+          <button type="button" id="apagar-dados" class="botao botao-perigo" disabled>Apagar dados deste navegador</button>
+        </div>
+      </fieldset>
+    </section>
+  </main>
+
+  <footer class="rodape">
+    <p class="casco">Os dados ficam somente neste navegador. Não há nuvem nem sincronização com outro celular ou computador.</p>
+  </footer>
+
+  <script src="vendor/jspdf.umd.min.js"></script>
+  <script src="vendor/xlsx.full.min.js"></script>
+  <script src="calculations.js"></script>
+  <script src="storage.js"></script>
+  <script src="export.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

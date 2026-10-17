@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Testes da calculadora</title>
+  <style>
+    body { font-family: "Segoe UI", sans-serif; margin: 24px; background: #f4f7f8; color: #1a2332; }
+    li { margin: 8px 0; }
+    .ok { color: #1b6b45; }
+    .falha { color: #9e2a2b; }
+  </style>
+</head>
+<body>
+  <h1>Testes</h1>
+  <p id="resumo">Executando…</p>
+  <ol id="lista"></ol>
+  <script src="../calculations.js"></script>
+  <script src="../storage.js"></script>
+  <script src="../export.js"></script>
+  <script src="suite.js"></script>
+  <script>
+    var relatorio = executarTestes();
+    document.body.dataset.resultado = relatorio.falhas === 0 ? "pass" : "fail";
+    document.getElementById("resumo").textContent = relatorio.aprovados + " aprovados, " + relatorio.falhas + " falhas, " + relatorio.total + " testes.";
+    var lista = document.getElementById("lista");
+    relatorio.testes.forEach(function (teste) {
+      var item = document.createElement("li");
+      item.className = teste.ok ? "ok" : "falha";
+      item.textContent = (teste.ok ? "PASS — " : "FAIL — ") + teste.nome + (teste.erro ? " — " + teste.erro : "");
+      lista.appendChild(item);
+    });
+  </script>
+</body>
+</html>
